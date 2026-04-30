@@ -1,0 +1,75 @@
+name: Test Modpack
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Display Python version
+      run: python --version
+
+    - name: Run tests
+      run: |
+        chmod +x ./run_tests.sh
+        ./run_tests.sh
+
+    - name: Test Summary
+      if: always()
+      run: |
+        echo "Test run completed for Python ${{ matrix.python-version }}"
+
+  validate:
+    name: Validate Modpack Structure
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Check required files
+      run: |
+        if [ ! -f "manifest.json" ]; then
+          echo "Error: manifest.json not found"
+          exit 1
+        fi
+        if [ ! -f "README.md" ]; then
+          echo "Error: README.md not found"
+          exit 1
+        fi
+        if [ ! -f "icon.png" ]; then
+          echo "Error: icon.png not found"
+          exit 1
+        fi
+        echo "All required files present"
+
+    - name: Validate JSON syntax
+      run: |
+        python3 -c "import json; json.load(open('manifest.json'))"
+        echo "manifest.json is valid JSON"
+
+    - name: Check icon size
+      run: |
+        SIZE=$(stat -f%z icon.png 2>/dev/null || stat -c%s icon.png 2>/dev/null)
+        if [ $SIZE -gt 5242880 ]; then
+          echo "Error: icon.png is larger than 5MB"
+          exit 1
+        fi
+        echo "icon.png size is acceptable: $(($SIZE / 1024))KB"
