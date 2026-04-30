@@ -1,0 +1,6 @@
+# Test Requirements
+
+This file lists the Python packages required to run the test suite.
+
+# Core testing framework
+# No external dependencies needed - using standard library unittest
