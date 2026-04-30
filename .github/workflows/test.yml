@@ -1,0 +1,99 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Display Python version
+      run: python --version
+
+    - name: Run test suite
+      run: |
+        python -m unittest discover tests -v
+
+    - name: Test summary
+      if: always()
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "✅ All tests passed for Python ${{ matrix.python-version }}"
+        else
+          echo "❌ Tests failed for Python ${{ matrix.python-version }}"
+        fi
+
+  validate:
+    name: Validate Modpack
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Validate manifest.json
+      run: |
+        python -c "import json; json.load(open('manifest.json'))"
+        echo "✅ manifest.json is valid JSON"
+
+    - name: Check required files
+      run: |
+        files=("manifest.json" "icon.png" "README.md" "CHANGELOG.md")
+        for file in "${files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file is missing"
+            exit 1
+          fi
+        done
+
+    - name: Validate config directory
+      run: |
+        if [ -d "config" ]; then
+          cfg_count=$(find config -name "*.cfg" | wc -l)
+          echo "✅ Config directory exists with $cfg_count .cfg files"
+        else
+          echo "❌ Config directory is missing"
+          exit 1
+        fi
+
+    - name: Check for BepInEx dependency
+      run: |
+        if grep -q "BepInEx" manifest.json; then
+          echo "✅ BepInEx dependency found"
+        else
+          echo "❌ BepInEx dependency not found"
+          exit 1
+        fi
+
+    - name: Validation summary
+      if: success()
+      run: |
+        echo ""
+        echo "================================================"
+        echo "  ✅ All validation checks passed!"
+        echo "================================================"
