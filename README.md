@@ -240,3 +240,17 @@ If you have any feedback, please reach out using the official page of All The Co
 
 ## 🚀 Github
 The [official page](https://github.com/PEPOAFONSO/All_The_Content) of the modpack.
+
+## 🧪 Testing
+
+This modpack includes a comprehensive test suite to validate configuration integrity. To run tests:
+
+```bash
+# Quick test run
+./run_tests.sh
+
+# Or use Python directly
+python -m unittest discover tests -v
+```
+
+See [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) for detailed coverage information.
